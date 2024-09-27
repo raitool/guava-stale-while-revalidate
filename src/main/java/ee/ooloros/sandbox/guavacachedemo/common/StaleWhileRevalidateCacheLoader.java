@@ -9,8 +9,6 @@ import java.util.concurrent.Executors;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListenableFutureTask;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,16 +34,22 @@ public abstract class StaleWhileRevalidateCacheLoader<T, U> {
     }
 
     public U getValue(T key) {
-        return getStaleWhileRevalidateValue(key)
+        return getValueNonBlocking(key)
                 .orElseGet(() -> getValueBlocking(key));
     }
 
     protected abstract U loadValueFromSource(T key);
 
-    private Optional<U> getStaleWhileRevalidateValue(T key) {
+    /**
+     * either FRESH or STALE_WHILE_REVALIDATE
+     * */
+    private Optional<U> getValueNonBlocking(T key) {
         return Optional.ofNullable(cache.getIfPresent(key));
     }
 
+    /**
+     * either no value in cache or expired
+     */
     private U getValueBlocking(T key) {
         try {
             return cache.get(key, () -> loadValueFromSource(key));
