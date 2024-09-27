@@ -14,6 +14,8 @@ import com.google.common.util.concurrent.ListenableFutureTask;
 
 import lombok.extern.slf4j.Slf4j;
 
+import static com.google.common.cache.CacheLoader.asyncReloading;
+
 @Slf4j
 public abstract class StaleWhileRevalidateCacheLoader<T, U> {
 
@@ -25,26 +27,9 @@ public abstract class StaleWhileRevalidateCacheLoader<T, U> {
     private final Cache<T, U> cache = CacheBuilder.newBuilder()
             .refreshAfterWrite(DURATION_FRESH)
             .expireAfterWrite(DURATION_EXPIRED)
-            .build(new CacheLoader<>() {
-                @Override
-                public U load(T key) throws Exception {
-                    log.info("refreshing {}", key);
-                    return loadValueFromSource(key);
-                }
-
-                @Override
-                public ListenableFuture<U> reload(T key, U oldValue) {
-                    log.info("trigger reload {}", key);
-                    var reloadTask = ListenableFutureTask.create(() -> {
-                        log.info("reload {}", key);
-                        var value = loadValueFromSource(key);
-                        log.info("reloaded {}", value);
-                        return value;
-                    });
-                    executorService.execute(reloadTask);
-                    return reloadTask;
-                }
-            });
+            .build(asyncReloading(
+                    CacheLoader.from(this::loadValueFromSource),
+                    executorService));
 
     public void setValue(T key, U value) {
         cache.put(key, value);

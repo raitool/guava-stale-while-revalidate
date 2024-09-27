@@ -143,7 +143,7 @@ class PropsControllerIntegrationTest {
 
             List<LoggedRequest> all = wireMockServer.findAll(getRequestedFor(urlEqualTo("/api/props/" + key)));
             log.info("verify wiremock, TODO: " + all.size() +" " + all);
-            //FIXME: it fails
+            //FIXME: it fails, but the same code does not fail when server returns 200 - bug in Wiremock?
             wireMockServer.verify(0, getRequestedFor(urlEqualTo("/api/props/" + key)));
             Thread.sleep(2_000);//wait async loading to finish
             wireMockServer.verify(1, getRequestedFor(urlEqualTo("/api/props/" + key)));
