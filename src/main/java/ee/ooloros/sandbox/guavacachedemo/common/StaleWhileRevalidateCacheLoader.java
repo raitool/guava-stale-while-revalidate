@@ -10,11 +10,29 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 
-import lombok.extern.slf4j.Slf4j;
-
 import static com.google.common.cache.CacheLoader.asyncReloading;
 
-@Slf4j
+/**
+ * non-blocking guava cache with 3 use-cases:
+ * <table>
+ *     <tr>
+ *         <th>Period</th>
+ *         <th>Comment</th>
+ *     </tr>
+ *     <tr>
+ *         <td>x < 10sec</td>
+ *         <td>FRESH value in cache<br/>return immediately, do not trigger async (non-blocking) refresh</td>
+ *     </tr>
+ *     <tr>
+ *         <td>10sec <= x < 20sec</td>
+ *         <td>STALE value in cache<br/>return immediately, but trigger async (non-blocking) refresh</td>
+ *     </tr>
+ *     <tr>
+ *         <td>20sec <= x</td>
+ *         <td>EXPIRED value in cache<br/>blocking refresh from source. Same as no value in cache</td>
+ *     </tr>
+ * </table>
+ */
 public abstract class StaleWhileRevalidateCacheLoader<T, U> {
 
     public static final Duration DURATION_FRESH = Duration.ofSeconds(10);
